@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Restaurant Guide - Peru & Beyond</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <div class="header-content">
+            <h1>Ultimate Rec List</h1>
+            <p>curated recommendations from peace corps volunteers</p>
+	    <p>
+ 	 <a href="https://forms.gle/2itvpv3RoT8cnrXJ9" 
+   	  target="_blank" 
+    	 rel="noopener noreferrer">
+ 	   add your recs and reviews here
+	  </a>
+	</p>
+	
+        </div>
+    </header>
+
+    <div class="container">
+        <!-- Filters Section -->
+        <div class="filters-section">
+            <div class="search-container">
+                <input type="text" id="searchBox" placeholder="🔍 Search restaurants, cities, notes...">
+            </div>
+            
+            <div class="filters-grid">
+                <div class="filter-group">
+                    <label>Country</label>
+                    <select id="countryFilter">
+                        <option value="All">All Countries</option>
+                    </select>
+                </div>
+                
+                <div class="filter-group">
+                    <label>Region</label>
+                    <select id="regionFilter">
+                        <option value="All">All Regions</option>
+                    </select>
+                </div>
+                
+                <div class="filter-group">
+                    <label>City</label>
+                    <select id="cityFilter">
+                        <option value="All">All Cities</option>
+                    </select>
+                </div>
+                
+                <div class="filter-group">
+                    <label>Category</label>
+                    <select id="categoryFilter">
+                        <option value="All">All Categories</option>
+                    </select>
+                </div>
+                
+                <div class="filter-group">
+                    <label>Sort By</label>
+                    <select id="sortBy">
+                        <option value="rating-desc">⭐ Highest Rated</option>
+                        <option value="rating-asc">⭐ Lowest Rated</option>
+                        <option value="price-asc">💰 Cheapest First</option>
+                        <option value="price-desc">💰 Most Expensive</option>
+                        <option value="name-asc">🔤 A to Z</option>
+                        <option value="reviews-desc">👥 Most Reviewed</option>
+                    </select>
+                </div>
+            </div>
+            
+            <button id="clearFilters" class="clear-btn">Clear All Filters</button>
+        </div>
+
+        <!-- Stats -->
+        <div id="stats" class="stats"></div>
+
+        <!-- Results -->
+        <div id="results" class="results"></div>
+    </div>
+
+    <footer>
+        <p>Data updates automatically from Google Sheets</p>
+        <p>Last updated: <span id="lastUpdate"></span></p>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>
