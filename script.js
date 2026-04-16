@@ -207,7 +207,7 @@ function filterData(){
 function renderResults(){
   const res=document.getElementById('results'),
         stat=document.getElementById('stats');
-  stat.textContent=`Showing ${filteredData.length} of ${allData.length} restaurants`;
+  stat.textContent=`Showing ${filteredData.length} of ${allData.length} places`;
   if(!filteredData.length){
     res.innerHTML=`<div class="no-results">
       <h2>🔍 No restaurants found</h2>
