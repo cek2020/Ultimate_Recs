@@ -33,8 +33,13 @@ async function loadData(){
 function parseData(rows){
   return rows.map((r,i) => {
     // Extract prices by exact header names
-    const priceSol = parseFloat(r['How much did you pay (S/.)?'] || 0);
-    const priceUsd = parseFloat(r['How much did you pay (USD $ )?'] || 0);
+const pricePEN = parseFloat(r['How much did you pay (PEN S/.)?'] || 0);
+const priceUSD = parseFloat(r['How much did you pay (USD $)?'] || 0);
+const pricePYG = parseFloat(r['How much did you pay (PYG ₲)?'] || 0);
+const priceGYD = parseFloat(r['How much did you pay (GYD G$)?'] || 0);
+
+const customPrice = parseFloat(r['How much did you pay?'] || 0);
+const customCurrency = String(r['What currency did you report?'] || '').trim();
     
     // Determine city
     const cityCols = [
@@ -56,17 +61,23 @@ function parseData(rows){
       }
     }
     
-    return {
-      place:    String(r['Name of Place'] || '').trim(),
-      category: String(r['Category:'] || '').trim(),
-      country:  String(r['Country'] || '').trim(),
-      region:   String(r['Department'] || r['Region/State'] || '').trim(),
-      city:     city,
-      rating:   parseFloat(r['What is your rating?'] || 0),
-      priceSol,
-      priceUsd,
-      notes:    String(r['Notes'] || '').trim()
-    };
+return {
+  place: String(r['Name of Place'] || '').trim(),
+  category: String(r['Category:'] || '').trim(),
+  country: String(r['Country'] || '').trim(),
+  region: String(r['Department'] || r['Region/State'] || '').trim(),
+  city: city,
+  rating: parseFloat(r['What is your rating?'] || 0),
+
+  pricePEN,
+  priceUSD,
+  pricePYG,
+  priceGYD,
+  customPrice,
+  customCurrency,
+
+  notes: String(r['Notes'] || '').trim()
+};
   }).filter(x=>x.place);
 }
 function normalizePlaceName(name) {
@@ -139,8 +150,12 @@ const existing = grouped.find(g =>
         city: item.city,
         category: item.category,
         ratings: [],
-        pricesS: [],
-        pricesU: [],
+        pricesPEN: [],
+        pricesUSD: [],
+        pricesPYG: [],
+        pricesGYD: [],
+        customPrices: [],
+        customCurrencies: [],
         notes: [],
         reviewCount: 0
       };
@@ -149,8 +164,18 @@ const existing = grouped.find(g =>
     }
 
     if (item.rating > 0) g.ratings.push(item.rating);
-    if (item.priceSol > 0) g.pricesS.push(item.priceSol);
-    if (item.priceUsd > 0) g.pricesU.push(item.priceUsd);
+if (item.pricePEN > 0) g.pricesPEN.push(item.pricePEN);
+if (item.priceUSD > 0) g.pricesUSD.push(item.priceUSD);
+if (item.pricePYG > 0) g.pricesPYG.push(item.pricePYG);
+if (item.priceGYD > 0) g.pricesGYD.push(item.priceGYD);
+
+if (item.customPrice > 0) {
+  g.customPrices.push(item.customPrice);
+
+  if (item.customCurrency) {
+    g.customCurrencies.push(item.customCurrency);
+  }
+}
     if (item.notes) g.notes.push(item.notes);
 
     g.reviewCount++;
@@ -172,8 +197,11 @@ const existing = grouped.find(g =>
         : 0;
 
     const rating = avg(g.ratings);
-    const solPrice = avg(g.pricesS);
-    const usdPrice = avg(g.pricesU);
+      const penPrice = avg(g.pricesPEN);
+      const usdPrice = avg(g.pricesUSD);
+      const pygPrice = avg(g.pricesPYG);
+      const gydPrice = avg(g.pricesGYD);
+      const customPrice = avg(g.customPrices);
 
     return {
       place: g.place,
@@ -182,8 +210,38 @@ const existing = grouped.find(g =>
       city: g.city,
       category: g.category,
       rating,
-      price: g.country === 'Peru' ? solPrice : usdPrice,
-      currency: g.country === 'Peru' ? 'S/.' : '$',
+let price = 0;
+let currency = '';
+
+if (g.country === 'Peru') {
+  price = penPrice;
+  currency = 'PEN S/.';
+}
+else if (g.country === 'Paraguay') {
+  price = pygPrice;
+  currency = 'PYG ₲';
+}
+else if (g.country === 'Guyana') {
+  price = gydPrice;
+  currency = 'GYD G$';
+}
+else if (g.customPrices.length > 0) {
+  price = customPrice;
+
+  const currencyCounts = {};
+
+  g.customCurrencies.forEach(c => {
+    currencyCounts[c] = (currencyCounts[c] || 0) + 1;
+  });
+
+  currency =
+    Object.keys(currencyCounts)
+      .sort((a,b)=>currencyCounts[b]-currencyCounts[a])[0] || '';
+}
+else {
+  price = usdPrice;
+  currency = 'USD $';
+}
       reviewCount: g.reviewCount,
       notes: g.notes.join(' | ')
     };
