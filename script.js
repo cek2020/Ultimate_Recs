@@ -97,6 +97,12 @@ function namesMatch(a, b) {
   return false;
 }
 
+console.log(
+  namesMatch(
+    "La Chola Sangucheria",
+    "La Chola Sangucheria Cajamarquina C4"
+  )
+);
 function aggregateByRestaurant(data){
   const grouped = [];
 
