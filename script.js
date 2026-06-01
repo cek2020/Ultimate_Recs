@@ -75,7 +75,8 @@ function normalizePlaceName(name) {
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .replace(/[^\w\s]/g, '')
-    .replace(/\bc\d+\b/g, '')       // C4, C12, etc
+    .replace(/\bc\d+\b/g, '')
+    .replace(/\bcajamarquina\b/g, '')
     .replace(/\blocal\s*\d+\b/g, '')
     .replace(/\bsede\b/g, '')
     .replace(/\bsucursal\b/g, '')
@@ -87,10 +88,17 @@ function namesMatch(a, b) {
   const na = normalizePlaceName(a);
   const nb = normalizePlaceName(b);
 
+  // Exact match
   if (na === nb) return true;
 
+  // Remove spaces for Mak Sushi vs Maksushi
+  const sa = na.replace(/\s+/g, '');
+  const sb = nb.replace(/\s+/g, '');
+
+  if (sa === sb) return true;
+
   // One name contains the other
-  if (na.includes(nb) || nb.includes(na)) {
+  if (sa.includes(sb) || sb.includes(sa)) {
     return true;
   }
 
