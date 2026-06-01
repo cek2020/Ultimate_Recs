@@ -97,6 +97,7 @@ function namesMatch(a, b) {
 
   return false;
 }
+
 function aggregateByRestaurant(data){
   const grouped = [];
 
@@ -130,10 +131,10 @@ function aggregateByRestaurant(data){
       grouped.push(g);
     }
 
-    if(item.rating > 0)   g.ratings.push(item.rating);
-    if(item.priceSol > 0) g.pricesS.push(item.priceSol);
-    if(item.priceUsd > 0) g.pricesU.push(item.priceUsd);
-    if(item.notes)        g.notes.push(item.notes);
+    if (item.rating > 0) g.ratings.push(item.rating);
+    if (item.priceSol > 0) g.pricesS.push(item.priceSol);
+    if (item.priceUsd > 0) g.pricesU.push(item.priceUsd);
+    if (item.notes) g.notes.push(item.notes);
 
     g.reviewCount++;
 
@@ -148,9 +149,10 @@ function aggregateByRestaurant(data){
   });
 
   return grouped.map(g => {
+
     const avg = arr =>
       arr.length
-        ? arr.reduce((a,b) => a+b, 0) / arr.length
+        ? arr.reduce((a, b) => a + b, 0) / arr.length
         : 0;
 
     const rating = avg(g.ratings);
@@ -168,28 +170,6 @@ function aggregateByRestaurant(data){
       currency: g.country === 'Peru' ? 'S/.' : '$',
       reviewCount: g.reviewCount,
       notes: g.notes.join(' | ')
-    };
-  });
-}
-    let g=grouped[key];
-    if(item.rating>0)   g.ratings.push(item.rating);
-    if(item.priceSol>0) g.pricesS.push(item.priceSol);
-    if(item.priceUsd>0) g.pricesU.push(item.priceUsd);
-    if(item.notes)      g.notes.push(item.notes);
-    g.reviewCount++;
-    // merge categories
-    let cats=new Set((g.category+','+item.category).split(',').map(c=>c.trim()).filter(Boolean));
-    g.category=Array.from(cats).join(', ');
-  });
-  return Object.values(grouped).map(g=>{
-    const avg=a=>a.length?a.reduce((x,y)=>x+y,0)/a.length:0;
-    const r=avg(g.ratings), s=avg(g.pricesS), u=avg(g.pricesU);
-    const price = g.country==='Peru'? s : u;
-    const symbol= g.country==='Peru'? 'S/.' : '$';
-    return {
-      place:g.place,country:g.country,region:g.region,city:g.city,
-      category:g.category,rating:r,price:price,currency:symbol,
-      reviewCount:g.reviewCount,notes:g.notes.join(' | ')
     };
   });
 }
@@ -240,8 +220,10 @@ function setupEventListeners(){
   document.getElementById('categoryFilter').onchange = filterData;
   document.getElementById('sortBy').onchange         = filterData;
   document.getElementById('clearFilters').onclick    = ()=> {
-    ['searchBox','countryFilter','regionFilter','cityFilter','categoryFilter']
-      .forEach(id=>document.getElementById(id).value='All');
+    document.getElementById('searchBox').value = '';
+
+['countryFilter','regionFilter','cityFilter','categoryFilter']
+  .forEach(id => document.getElementById(id).value = 'All');
     document.getElementById('searchBox').value='';
     document.getElementById('sortBy').value='rating-desc';
     filterData();
