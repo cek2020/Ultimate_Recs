@@ -80,7 +80,12 @@ function aggregateByRestaurant(data){
     const nc = item.city.toLowerCase().normalize('NFD')
       .replace(/[\u0300-\u036f]/g,'').replace(/[^\w\s]/g,'')
       .replace(/\s+/g,'').trim();
-    const key = np+'|||'+nc;
+    const nr = item.region.toLowerCase().normalize('NFD')   
+      .replace(/[\u0300-\u036f]/g,'')   
+      .replace(/[^\w\s]/g,'')   
+      .replace(/\s+/g,'')   
+      .trim();  
+    const key = `${np}|||${nc}|||${nr}`;y = np+'|||'+nc;
     if(!grouped[key]){
       grouped[key]={
         place:item.place,country:item.country,
