@@ -10,7 +10,7 @@ document.addEventListener('DOMContentLoaded', () => {
 async function loadData() {
   document.getElementById('results').innerHTML = '<div class="loading">✨ Loading…</div>';
   try {
-    const res = await fetch(API_URL);
+    const res = await fetch(API_URL, { redirect: 'follow' });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const rows = await res.json();
     const parsed = parseData(rows);
