@@ -89,10 +89,9 @@ function namesMatch(a, b) {
 
   if (na === nb) return true;
 
+  // One name contains the other
   if (na.includes(nb) || nb.includes(na)) {
-    const shorter = Math.min(na.length, nb.length);
-    const longer = Math.max(na.length, nb.length);
-    return shorter / longer > 0.7;
+    return true;
   }
 
   return false;
@@ -149,7 +148,6 @@ function aggregateByRestaurant(data){
   });
 
   return grouped.map(g => {
-
     const avg = arr =>
       arr.length
         ? arr.reduce((a, b) => a + b, 0) / arr.length
