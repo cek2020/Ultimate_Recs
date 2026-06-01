@@ -102,13 +102,28 @@ function aggregateByRestaurant(data){
 
   data.forEach(item => {
 
-    const existing = grouped.find(g =>
-      g.country.toLowerCase() === item.country.toLowerCase() &&
-      g.region.toLowerCase() === item.region.toLowerCase() &&
-      g.city.toLowerCase() === item.city.toLowerCase() &&
-      namesMatch(g.place, item.place)
-    );
+const existing = grouped.find(g =>
+  g.country.toLowerCase() === item.country.toLowerCase() &&
+  g.region.toLowerCase() === item.region.toLowerCase() &&
+  namesMatch(g.place, item.place)
+);
 
+    data.forEach(item => {
+  grouped.forEach(g => {
+    if (namesMatch(g.place, item.place)) {
+      console.log(
+        "MATCH FOUND",
+        g.place,
+        "<->",
+        item.place,
+        "| city:",
+        g.city,
+        item.city
+      );
+    }
+  });
+});
+    
     let g;
 
     if (existing) {
