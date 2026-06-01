@@ -76,11 +76,10 @@ function normalizePlaceName(name) {
     .replace(/[\u0300-\u036f]/g, '')
     .replace(/[^\w\s]/g, '')
     .replace(/\bc\d+\b/g, '')
-    .replace(/\bcajamarquina\b/g, '')
     .replace(/\blocal\s*\d+\b/g, '')
     .replace(/\bsede\b/g, '')
     .replace(/\bsucursal\b/g, '')
-    .replace(/\s+/g, ' ')
+    .replace(/\s+/g, '')   // ← remove ALL spaces
     .trim();
 }
 
@@ -88,21 +87,11 @@ function namesMatch(a, b) {
   const na = normalizePlaceName(a);
   const nb = normalizePlaceName(b);
 
-  // Exact match
-  if (na === nb) return true;
-
-  // Remove spaces for Mak Sushi vs Maksushi
-  const sa = na.replace(/\s+/g, '');
-  const sb = nb.replace(/\s+/g, '');
-
-  if (sa === sb) return true;
-
-  // One name contains the other
-  if (sa.includes(sb) || sb.includes(sa)) {
-    return true;
-  }
-
-  return false;
+  return (
+    na === nb ||
+    na.includes(nb) ||
+    nb.includes(na)
+  );
 }
 
 console.log(
