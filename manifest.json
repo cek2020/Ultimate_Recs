@@ -1,0 +1,21 @@
+{
+  "name": "Ultimate Recs List",
+  "short_name": "Recs List",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#1f7a8c",
+  "theme_color": "#1f7a8c",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
