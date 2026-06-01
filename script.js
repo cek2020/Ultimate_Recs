@@ -69,32 +69,108 @@ function parseData(rows){
     };
   }).filter(x=>x.place);
 }
+function normalizePlaceName(name) {
+  return name
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^\w\s]/g, '')
+    .replace(/\bc\d+\b/g, '')       // C4, C12, etc
+    .replace(/\blocal\s*\d+\b/g, '')
+    .replace(/\bsede\b/g, '')
+    .replace(/\bsucursal\b/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
 
+function namesMatch(a, b) {
+  const na = normalizePlaceName(a);
+  const nb = normalizePlaceName(b);
+
+  if (na === nb) return true;
+
+  if (na.includes(nb) || nb.includes(na)) {
+    const shorter = Math.min(na.length, nb.length);
+    const longer = Math.max(na.length, nb.length);
+    return shorter / longer > 0.7;
+  }
+
+  return false;
+}
 function aggregateByRestaurant(data){
-  const grouped = {};
-  data.forEach(item=>{
-    // Normalize place+city keys
-    const np = item.place.toLowerCase().normalize('NFD')
-      .replace(/[\u0300-\u036f]/g,'').replace(/[^\w\s]/g,'')
-      .replace(/\s+/g,'').trim();
-    const nc = item.city.toLowerCase().normalize('NFD')
-      .replace(/[\u0300-\u036f]/g,'').replace(/[^\w\s]/g,'')
-      .replace(/\s+/g,'').trim();
-    const nr = item.region.toLowerCase().normalize('NFD')   
-      .replace(/[\u0300-\u036f]/g,'')   
-      .replace(/[^\w\s]/g,'')   
-      .replace(/\s+/g,'')   
-      .trim();  
-    const key = `${np}|||${nc}|||${nr}`;y = np+'|||'+nc;
-    if(!grouped[key]){
-      grouped[key]={
-        place:item.place,country:item.country,
-        region:item.region,city:item.city,
-        category:item.category,ratings:[],
-        pricesS:[],pricesU:[],notes:[],
-        reviewCount:0
+  const grouped = [];
+
+  data.forEach(item => {
+
+    const existing = grouped.find(g =>
+      g.country.toLowerCase() === item.country.toLowerCase() &&
+      g.region.toLowerCase() === item.region.toLowerCase() &&
+      g.city.toLowerCase() === item.city.toLowerCase() &&
+      namesMatch(g.place, item.place)
+    );
+
+    let g;
+
+    if (existing) {
+      g = existing;
+    } else {
+      g = {
+        place: item.place,
+        country: item.country,
+        region: item.region,
+        city: item.city,
+        category: item.category,
+        ratings: [],
+        pricesS: [],
+        pricesU: [],
+        notes: [],
+        reviewCount: 0
       };
+
+      grouped.push(g);
     }
+
+    if(item.rating > 0)   g.ratings.push(item.rating);
+    if(item.priceSol > 0) g.pricesS.push(item.priceSol);
+    if(item.priceUsd > 0) g.pricesU.push(item.priceUsd);
+    if(item.notes)        g.notes.push(item.notes);
+
+    g.reviewCount++;
+
+    const cats = new Set(
+      (g.category + ',' + item.category)
+        .split(',')
+        .map(c => c.trim())
+        .filter(Boolean)
+    );
+
+    g.category = Array.from(cats).join(', ');
+  });
+
+  return grouped.map(g => {
+    const avg = arr =>
+      arr.length
+        ? arr.reduce((a,b) => a+b, 0) / arr.length
+        : 0;
+
+    const rating = avg(g.ratings);
+    const solPrice = avg(g.pricesS);
+    const usdPrice = avg(g.pricesU);
+
+    return {
+      place: g.place,
+      country: g.country,
+      region: g.region,
+      city: g.city,
+      category: g.category,
+      rating,
+      price: g.country === 'Peru' ? solPrice : usdPrice,
+      currency: g.country === 'Peru' ? 'S/.' : '$',
+      reviewCount: g.reviewCount,
+      notes: g.notes.join(' | ')
+    };
+  });
+}
     let g=grouped[key];
     if(item.rating>0)   g.ratings.push(item.rating);
     if(item.priceSol>0) g.pricesS.push(item.priceSol);
