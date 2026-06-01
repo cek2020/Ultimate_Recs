@@ -1,7 +1,4 @@
-
 const API_URL = 'https://script.google.com/macros/s/AKfycbwk1ptgpIOGR4Ft3tm6ahgNqgFtN6wwqbQZC7jgYN7XeBfhtVp_cqQ6wJFyLztCsW1U/exec';
-
-
 
 let allData = [], filteredData = [];
 
@@ -37,7 +34,6 @@ const pricePEN = parseFloat(r['How much did you pay (PEN S/.)?'] || 0);
 const priceUSD = parseFloat(r['How much did you pay (USD $)?'] || 0);
 const pricePYG = parseFloat(r['How much did you pay (PYG ₲)?'] || 0);
 const priceGYD = parseFloat(r['How much did you pay (GYD G$)?'] || 0);
-
 const customPrice = parseFloat(r['How much did you pay?'] || 0);
 const customCurrency = String(r['What currency did you report?'] || '').trim();
     
@@ -122,9 +118,7 @@ const existing = grouped.find(g =>
   namesMatch(g.place, item.place)
 );
 
-    
     let g;
-
     if (existing) {
       g = existing;
     } else {
@@ -187,5 +181,185 @@ if (item.customPrice > 0) {
       const pygPrice = avg(g.pricesPYG);
       const gydPrice = avg(g.pricesGYD);
       const customPrice = avg(g.customPrices);
+    
+  return {
+      place: g.place,
+      country: g.country,
+      region: g.region,
+      city: g.city,
+      category: g.category,
+      rating,
+    let price = 0;
+let currency = '';
 
+if (g.country === 'Peru') {
+  price = penPrice;
+  currency = 'PEN S/.';
+}
+else if (g.country === 'Paraguay') {
+  price = pygPrice;
+  currency = 'PYG ₲';
+}
+else if (g.country === 'Guyana') {
+  price = gydPrice;
+  currency = 'GYD G$';
+}
+else if (g.customPrices.length > 0) {
+  price = customPrice;
+
+  const currencyCounts = {};
+
+  g.customCurrencies.forEach(c => {
+    currencyCounts[c] = (currencyCounts[c] || 0) + 1;
+  });
+
+  currency =
+    Object.keys(currencyCounts)
+      .sort((a,b)=>currencyCounts[b]-currencyCounts[a])[0] || '';
+}
+else {
+  price = usdPrice;
+  currency = 'USD $';
+}
+      reviewCount: g.reviewCount,
+      notes: g.notes.join(' | ')
+    };
+  });
+}
+
+function populateFilters(){
+  const cs=new Set(), rs=new Set(), xs=new Set(), ts=new Set();
+  allData.forEach(i=>{
+    if(i.country) cs.add(i.country);
+    if(i.region)  rs.add(i.region);
+    if(i.city)    xs.add(i.city);
+    i.category.split(',').forEach(c=>ts.add(c.trim()));
+  });
+  selFill('countryFilter',cs);
+  selFill('regionFilter',rs);
+  selFill('cityFilter',xs);
+  selFill('categoryFilter',ts);
+}
+
+function selFill(id,set){
+  let arr=[...set].filter(Boolean).sort(); arr.unshift('All');
+  document.getElementById(id).innerHTML = arr.map(v=>`<option>${v}</option>`).join('');
+}
+
+function setupEventListeners(){
+  document.getElementById('searchBox').oninput      = filterData;
+  document.getElementById('countryFilter').onchange = ()=>{
+    populateRegion();filterData();
+  };
+  function populateRegion(){
+    const cf=document.getElementById('countryFilter').value;
+    const rs=new Set(allData.filter(i=>cf==='All'||i.country===cf).map(i=>i.region));
+    selFill('regionFilter',rs);
+    populateCity();
+  }
+  function populateCity(){
+    const cf=document.getElementById('countryFilter').value;
+    const rf=document.getElementById('regionFilter').value;
+    const xs=new Set(allData.filter(i=>
+      (cf==='All'||i.country===cf) &&
+      (rf==='All'||i.region===rf)
+    ).map(i=>i.city));
+    selFill('cityFilter',xs);
+  }
+  document.getElementById('regionFilter').onchange = ()=>{
+    populateCity();filterData();
+  };
+  document.getElementById('cityFilter').onchange     = filterData;
+  document.getElementById('categoryFilter').onchange = filterData;
+  document.getElementById('sortBy').onchange         = filterData;
+  document.getElementById('clearFilters').onclick    = ()=> {
+    document.getElementById('searchBox').value = '';
+
+['countryFilter','regionFilter','cityFilter','categoryFilter']
+  .forEach(id => document.getElementById(id).value = 'All');
+    document.getElementById('searchBox').value='';
+    document.getElementById('sortBy').value='rating-desc';
+    filterData();
+  };
+}
+
+function filterData(){
+  const txt=document.getElementById('searchBox').value.toLowerCase(),
+        cf=document.getElementById('countryFilter').value,
+        rf=document.getElementById('regionFilter').value,
+        tif=document.getElementById('cityFilter').value,
+        catf=document.getElementById('categoryFilter').value,
+        sb=document.getElementById('sortBy').value;
+
+  filteredData=allData.filter(i=>{
+    const matchSearch = !txt ||
+      i.place.toLowerCase().includes(txt)||
+      i.city.toLowerCase().includes(txt)||
+      i.region.toLowerCase().includes(txt)||
+      i.country.toLowerCase().includes(txt)||
+      i.notes.toLowerCase().includes(txt)||
+      i.category.toLowerCase().includes(txt);
+    const matchCountry = cf==='All'||i.country===cf;
+    const matchRegion  = rf==='All'||i.region===rf;
+    const matchCity    = tif==='All'||i.city===tif;
+    const matchCat     = catf==='All'||i.category.split(',').map(c=>c.trim()).includes(catf);
+    return matchSearch && matchCountry && matchRegion && matchCity && matchCat;
+  });
+
+  filteredData.sort((a,b)=>{
+    switch(sb){
+      case 'rating-desc': return b.rating-a.rating;
+      case 'rating-asc':  return a.rating-b.rating;
+      case 'price-asc':   return a.price-b.price;
+      case 'price-desc':  return b.price-a.price;
+      case 'name-asc':    return a.place.localeCompare(b.place);
+      case 'reviews-desc':return b.reviewCount-a.reviewCount;
+      default: return 0;
+    }
+  });
+  renderResults();
+}
+
+function renderResults(){
+  const res=document.getElementById('results'),
+        stat=document.getElementById('stats');
+  stat.textContent=`Showing ${filteredData.length} of ${allData.length} places`;
+  if(!filteredData.length){
+    res.innerHTML=`<div class="no-results">
+      <h2>🔍 No restaurants found</h2>
+      <p>Try adjusting your filters</p>
+    </div>`;
+    return;
+  }
+  res.innerHTML = filteredData.map(item=>`
+    <div class="card">
+      <div class="card-header">
+        <div class="place-name">${escapeHtml(item.place)}</div>
+        <div class="rating-badge">${item.rating?item.rating.toFixed(1):'N/A'} ⭐</div>
+      </div>
+      <div class="location-info">
+        ${item.country?`<div class="location-row">🌎 ${escapeHtml(item.country)}</div>`:''}
+        ${item.region?`<div class="location-row">🗺️ ${escapeHtml(item.region)}</div>`:''}
+        ${item.city?`<div class="location-row">📍 ${escapeHtml(item.city)}</div>`:''}
+      </div>
+      ${item.category?`<div class="tags">${item.category.split(',').map(c=>
+        `<span class="tag">${escapeHtml(c.trim())}</span>`).join('')}</div>`:''}
+      <div class="price-reviews">
+        <div class="price">${item.currency} ${item.price.toFixed(2)}</div>
+        <div class="reviews">${item.reviewCount} review${item.reviewCount!==1?'s':''}</div>
+      </div>
+      ${item.notes?`<div class="notes">${escapeHtml(item.notes)}</div>`:''}
+    </div>
+  `).join('');
+}
+
+function escapeHtml(t){
+  let d=document.createElement('div');d.textContent=String(t);return d.innerHTML;
+}
+
+function updateLastUpdate(){
+  document.getElementById('lastUpdate').textContent=new Date().toLocaleString();
+}
+
+setInterval(loadData,300000);
   
