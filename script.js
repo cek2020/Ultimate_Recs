@@ -27,141 +27,114 @@ async function loadData() {
   }
 }
 
-function parseData(rows){
-
+function parseData(rows) {
   return rows.map(r => {
 
-    // -----------------------------
-    // PRICE FIELDS
-    // -----------------------------
+    // --- PRICES ---
     const pricePEN = parseFloat(r['How much did you pay (PEN S/.)?'] || 0);
     const priceUSD = parseFloat(r['How much did you pay (USD $)?'] || 0);
     const pricePYG = parseFloat(r['How much did you pay (PYG ₲)?'] || 0);
     const priceGYD = parseFloat(r['How much did you pay (GYD G$)?'] || 0);
-
     const customPrice = parseFloat(r['How much did you pay?'] || 0);
-    const customCurrency = String(
-      r['What currency did you report?'] || ''
-    ).trim();
+    const customCurrency = String(r['What currency did you report?'] || '').trim();
 
-    // -----------------------------
-    // COUNTRY
-    // -----------------------------
     const country = String(r['Country'] || '').trim();
 
-    // -----------------------------
-    // REGION / DEPARTMENT
-    // -----------------------------
-    let region =
-      String(r['Department'] || r['Region/State'] || '').trim();
+    // --- REGION ---
+    // Col H  "Department"              → Peru departments + "Lima Downtown" / "Lima District"
+    // Col D  "Department/Region/State" → Mexico
+    // Col M  "Region"                  → Chile, Ecuador, Guyana  (renamed by Apps Script; first "Region" stays "Region")
+    // Col O  "Department\n"            → Paraguay (note the newline in header)
+    // Apps Script renames duplicate headers: 2nd City→City_col_L, 3rd→City_col_N, 4th→City_col_P
+    // "Region" only appears once so it stays as "Region".
+    // "Department\n" (col O) only appears once so it stays as-is (trimmed key may vary).
 
-    // COUNTRY-SPECIFIC REGION FALLBACKS
+    let region = String(r['Department'] || '').trim();
 
     if (!region) {
-
-      const regionFields = [
-        'Which department in Paraguay',
-        'Which province/state in Ecuador',
-        'Which state in Mexico',
-        'Which region in Chile',
-        'Which region in Guyana'
+      // Try each possible region column in priority order
+      const regionCandidates = [
+        r['Department/Region/State'],   // col D — Mexico
+        r['Region'],                    // col M — Chile, Ecuador, Guyana
+        r['Department\n'],              // col O — Paraguay (raw header has newline)
+        r['Department_col_O'],          // in case Apps Script renames it
       ];
+      for (const v of regionCandidates) {
+        const s = String(v || '').trim();
+        if (s) { region = s; break; }
+      }
+    }
 
-      for (const field of regionFields) {
-        if (r[field] && String(r[field]).trim() !== '') {
-          region = String(r[field]).trim();
+    // --- CITY ---
+    // Col W  "Where in Lima"   → Lima Downtown
+    // Col X  "Where is Lima"   → Lima District
+    // Col E  "City"            → first City col, used by Mexico (Department/Region/State rows)
+    // Col L  "City_col_L"      → Province group (unused currently)
+    // Col N  "City_col_N"      → Chile, Ecuador, Guyana
+    // Col P  "City_col_P"      → Paraguay
+
+    let city = '';
+    const dept = String(r['Department'] || '').trim();
+
+    if (dept === 'Lima Downtown') {
+      city = String(r['Where in Lima'] || '').trim();
+    } else if (dept === 'Lima District') {
+      city = String(r['Where is Lima'] || '').trim();
+    } else {
+      // Try Peru department-specific columns first
+      const peruCityCols = [
+        'Which city in Amazonas', 'Which city in Ancash', 'Which city in Apirimac',
+        'Which city in Arequipa', 'Which city in Ayacucho', 'Which city in Cajamarca',
+        'Which city in Callao', 'Which city in Cusco', 'Which city in Huancavelica',
+        'Which city in Huanuco', 'Which city in Ica', 'Which city in Junin',
+        'Which city in La Libertad', 'Which city in Lambayeque',
+        'Which city in Loreto', 'Which city in Madre de Dios', 'Which city in Moquegua',
+        'Which city in Pasco', 'Which city in Piura', 'Which city in Puno',
+        'Which city in San Martin', 'Which city in Tacna', 'Which city in Tumbes',
+        'Which city in Ucayali'
+      ];
+      for (const c of peruCityCols) {
+        if (r[c] && String(r[c]).trim() !== '') {
+          city = String(r[c]).trim();
           break;
+        }
+      }
+
+      // Non-Peru countries: try renamed City columns in order
+      // City_col_N = col N (Chile, Ecuador, Guyana)
+      // City_col_P = col P (Paraguay)
+      // City       = col E (Mexico uses Department/Region/State + first City col)
+      if (!city) {
+        const nonPeruCityCandidates = [
+          r['City_col_N'],   // col N — Chile, Ecuador, Guyana
+          r['City_col_P'],   // col P — Paraguay
+          r['City'],         // col E — Mexico, fallback
+          r['City_col_L'],   // col L — Province group
+        ];
+        for (const v of nonPeruCityCandidates) {
+          const s = String(v || '').trim();
+          if (s) { city = s; break; }
         }
       }
     }
 
-    // -----------------------------
-    // CITY
-    // -----------------------------
-    let city = '';
-
-    const cityCols = [
-      'Which city in Amazonas',
-      'Which city in Ancash',
-      'Which city in Apirimac',
-      'Which city in Arequipa',
-      'Which city in Ayacucho',
-      'Which city in Cajamarca',
-      'Which city in Callao',
-      'Which city in Cusco',
-      'Which city in Huancavelica',
-      'Which city in Huanuco',
-      'Which city in Ica',
-      'Which city in Junin',
-      'Which city in La Libertad',
-      'Which city in Lambayeque',
-      'Where in Lima',
-      'Which city in Loreto',
-      'Which city in Madre de Dios',
-      'Which city in Moquegua',
-      'Which city in Pasco',
-      'Which city in Piura',
-      'Which city in Puno',
-      'Which city in San Martin',
-      'Which city in Tacna',
-      'Which city in Tumbes',
-      'Which city in Ucayali',
-      'City'
-    ];
-
-    for (const c of cityCols) {
-      if (r[c] && String(r[c]).trim() !== '') {
-        city = String(r[c]).trim();
-        break;
-      }
-    }
-
-    // -----------------------------
-    // FALLBACKS
-    // -----------------------------
-
-    // If country has no city system,
-    // use region as display city
-    if (!city && region) {
-      city = region;
-    }
-
-    // Final fallback
-    if (!region) {
-      region = country;
-    }
-
-    // -----------------------------
-    // RETURN OBJECT
-    // -----------------------------
     return {
       place: String(r['Name of Place'] || '').trim(),
-
       category: String(r['Category:'] || '').trim(),
-
       country,
-
       region,
-
       city,
-
-      rating: parseFloat(
-        r['What is your rating?'] || 0
-      ),
-
+      rating: parseFloat(r['What is your rating?'] || 0),
       pricePEN,
       priceUSD,
       pricePYG,
       priceGYD,
-
       customPrice,
       customCurrency,
-
       notes: String(r['Notes'] || '').trim()
     };
 
   }).filter(x => x.place);
-
 }
 
 function normalizePlaceName(name) {
