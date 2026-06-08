@@ -10,7 +10,7 @@ document.addEventListener('DOMContentLoaded', () => {
 async function loadData() {
   document.getElementById('results').innerHTML = '<div class="loading">✨ Loading…</div>';
   try {
-    const res = await fetch(API_URL, { redirect: 'follow' });
+    const res = await fetch(API_URL);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const rows = await res.json();
     const parsed = parseData(rows);
@@ -36,22 +36,52 @@ function parseData(rows) {
     const customPrice = parseFloat(r['How much did you pay?'] || 0);
     const customCurrency = String(r['What currency did you report?'] || '').trim();
 
-    const cityCols = [
-      'Which city in Amazonas', 'Which city in Ancash', 'Which city in Apirimac',
-      'Which city in Arequipa', 'Which city in Ayacucho', 'Which city in Cajamarca',
-      'Which city in Callao', 'Which city in Cusco', 'Which city in Huancavelica',
-      'Which city in Huanuco', 'Which city in Ica', 'Which city in Junin',
-      'Which city in La Libertad', 'Which city in Lambayeque', 'Where in Lima',
-      'Which city in Loreto', 'Which city in Madre de Dios', 'Which city in Moquegua',
-      'Which city in Pasco', 'Which city in Piura', 'Which city in Puno',
-      'Which city in San Martin', 'Which city in Tacna', 'Which city in Tumbes',
-      'Which city in Ucayali', 'City'
-    ];
+    const dept = String(r['Department'] || '').trim();
+
+    // --- REGION ---
+    // For Peru: use Department column (e.g. "Ancash", "Lima Downtown", "Lima District", "La Libertad")
+    // For Chile and other countries: use "Region" column (col AJ), fallback to "Region/State" or "Department/Region/State"
+    let region = '';
+    if (dept) {
+      region = dept;
+    } else {
+      region = String(r['Region'] || r['Region/State'] || r['Department/Region/State'] || '').trim();
+    }
+
+    // --- CITY ---
+    // Peru departments each have their own city column.
+    // Lima Downtown → city is in "Where in Lima"
+    // Lima District  → city is in "Where is Lima"
+    // Chile / others → city is in "City" column (col AK).
+    //   If Google Sheets renamed the second "City" column, also try "City.1".
     let city = '';
-    for (let c of cityCols) {
-      if (r[c] && String(r[c]).trim() !== '') {
-        city = String(r[c]).trim();
-        break;
+
+    if (dept === 'Lima Downtown') {
+      city = String(r['Where in Lima'] || '').trim();
+    } else if (dept === 'Lima District') {
+      city = String(r['Where is Lima'] || '').trim();
+    } else {
+      // Try all Peru department-specific city columns first
+      const peruCityCols = [
+        'Which city in Amazonas', 'Which city in Ancash', 'Which city in Apirimac',
+        'Which city in Arequipa', 'Which city in Ayacucho', 'Which city in Cajamarca',
+        'Which city in Callao', 'Which city in Cusco', 'Which city in Huancavelica',
+        'Which city in Huanuco', 'Which city in Ica', 'Which city in Junin',
+        'Which city in La Libertad', 'Which city in Lambayeque',
+        'Which city in Loreto', 'Which city in Madre de Dios', 'Which city in Moquegua',
+        'Which city in Pasco', 'Which city in Piura', 'Which city in Puno',
+        'Which city in San Martin', 'Which city in Tacna', 'Which city in Tumbes',
+        'Which city in Ucayali'
+      ];
+      for (let c of peruCityCols) {
+        if (r[c] && String(r[c]).trim() !== '') {
+          city = String(r[c]).trim();
+          break;
+        }
+      }
+      // If still empty (Chile or other country), use "City" col (AK) or "City.1" fallback
+      if (!city) {
+        city = String(r['City'] || r['City.1'] || '').trim();
       }
     }
 
@@ -59,7 +89,7 @@ function parseData(rows) {
       place: String(r['Name of Place'] || '').trim(),
       category: String(r['Category:'] || '').trim(),
       country: String(r['Country'] || '').trim(),
-      region: String(r['Department'] || r['Region/State'] || '').trim(),
+      region,
       city,
       rating: parseFloat(r['What is your rating?'] || 0),
       pricePEN,
