@@ -49,39 +49,38 @@ function parseData(rows) {
     // "Region" only appears once so it stays as "Region".
     // "Department\n" (col O) only appears once so it stays as-is (trimmed key may vary).
 
-    let region = String(r['Department'] || '').trim();
+    // After Code.gs deduplication, the exact column keys are:
+    // Col AJ = "Department/Region/State"  → Chile + Mexico region
+    // Col AK = "City"                     → Chile + Mexico city
+    // Col AS = "Region"                   → Ecuador + Guyana region
+    // Col AT = "City_col_AT"              → Ecuador + Guyana city
+    // Col AU = "Department_col_AU"        → Paraguay region
+    // Col AV = "City_col_AV"              → Paraguay city
+    // Col H  = "Department"               → Peru region (incl. "Lima Downtown"/"Lima District")
+    // Col W  = "Where in Lima"            → Lima Downtown city
+    // Col X  = "Where is Lima"            → Lima District city
 
-    if (!region) {
-      // Try each possible region column in priority order
-      const regionCandidates = [
-        r['Department/Region/State'],   // col D — Mexico
-        r['Region'],                    // col M — Chile, Ecuador, Guyana
-        r['Department\n'],              // col O — Paraguay (raw header has newline)
-        r['Department_col_O'],          // in case Apps Script renames it
-      ];
-      for (const v of regionCandidates) {
-        const s = String(v || '').trim();
-        if (s) { region = s; break; }
-      }
-    }
-
-    // --- CITY ---
-    // Col W  "Where in Lima"   → Lima Downtown
-    // Col X  "Where is Lima"   → Lima District
-    // Col E  "City"            → first City col, used by Mexico (Department/Region/State rows)
-    // Col L  "City_col_L"      → Province group (unused currently)
-    // Col N  "City_col_N"      → Chile, Ecuador, Guyana
-    // Col P  "City_col_P"      → Paraguay
-
-    let city = '';
     const dept = String(r['Department'] || '').trim();
 
+    let region = '';
+    if (dept) {
+      region = dept; // Peru (all departments including Lima Downtown / Lima District)
+    } else {
+      region = String(
+        r['Department/Region/State'] ||  // col AJ — Chile, Mexico
+        r['Region'] ||                   // col AS — Ecuador, Guyana
+        r['Department_col_AU'] ||        // col AU — Paraguay
+        ''
+      ).trim();
+    }
+
+    let city = '';
     if (dept === 'Lima Downtown') {
       city = String(r['Where in Lima'] || '').trim();
     } else if (dept === 'Lima District') {
       city = String(r['Where is Lima'] || '').trim();
     } else {
-      // Try Peru department-specific columns first
+      // Peru department-specific city columns
       const peruCityCols = [
         'Which city in Amazonas', 'Which city in Ancash', 'Which city in Apirimac',
         'Which city in Arequipa', 'Which city in Ayacucho', 'Which city in Cajamarca',
@@ -99,22 +98,15 @@ function parseData(rows) {
           break;
         }
       }
-
-      // Non-Peru countries: try renamed City columns in order
-      // City_col_N = col N (Chile, Ecuador, Guyana)
-      // City_col_P = col P (Paraguay)
-      // City       = col E (Mexico uses Department/Region/State + first City col)
+      // Non-Peru city columns (exact keys after dedup)
       if (!city) {
-        const nonPeruCityCandidates = [
-          r['City_col_N'],   // col N — Chile, Ecuador, Guyana
-          r['City_col_P'],   // col P — Paraguay
-          r['City'],         // col E — Mexico, fallback
-          r['City_col_L'],   // col L — Province group
-        ];
-        for (const v of nonPeruCityCandidates) {
-          const s = String(v || '').trim();
-          if (s) { city = s; break; }
-        }
+        city = String(
+          r['City'] ||          // col AK — Chile, Mexico
+          r['City_col_AT'] ||   // col AT — Ecuador, Guyana
+          r['City_col_AV'] ||   // col AV — Paraguay
+          r['City_col_AR'] ||   // col AR — Province group (fallback)
+          ''
+        ).trim();
       }
     }
 
