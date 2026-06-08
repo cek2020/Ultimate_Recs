@@ -39,21 +39,25 @@ function parseData(rows) {
     const dept = String(r['Department'] || '').trim();
 
     // --- REGION ---
-    // For Peru: use Department column (e.g. "Ancash", "Lima Downtown", "Lima District", "La Libertad")
-    // For Chile and other countries: use "Region" column (col AJ), fallback to "Region/State" or "Department/Region/State"
+    // Peru: Department col (H) has region ("Ancash", "Lima Downtown", "Lima District", etc.)
+    // Chile/others: Department is empty; region comes from "Region" col (M) renamed to "Region" by Apps Script
+    // Fallback: "Department/Region/State" col (D)
     let region = '';
     if (dept) {
       region = dept;
     } else {
-      region = String(r['Region'] || r['Region/State'] || r['Department/Region/State'] || '').trim();
+      region = String(r['Region'] || r['Department/Region/State'] || '').trim();
     }
 
     // --- CITY ---
-    // Peru departments each have their own city column.
-    // Lima Downtown → city is in "Where in Lima"
-    // Lima District  → city is in "Where is Lima"
-    // Chile / others → city is in "City" column (col AK).
-    //   If Google Sheets renamed the second "City" column, also try "City.1".
+    // The sheet has 4 columns all named "City" (cols E, L, N, P).
+    // The updated Apps Script renames duplicates as "City_col_L", "City_col_N", "City_col_P".
+    // Col N (City_col_N) = Chile city column.
+    //
+    // Lima Downtown → "Where in Lima"  (col W)
+    // Lima District → "Where is Lima"  (col X)
+    // Chile/others  → "City_col_N"     (col N)
+    // Peru depts    → "Which city in X" columns
     let city = '';
 
     if (dept === 'Lima Downtown') {
@@ -61,7 +65,7 @@ function parseData(rows) {
     } else if (dept === 'Lima District') {
       city = String(r['Where is Lima'] || '').trim();
     } else {
-      // Try all Peru department-specific city columns first
+      // Try Peru department-specific city columns
       const peruCityCols = [
         'Which city in Amazonas', 'Which city in Ancash', 'Which city in Apirimac',
         'Which city in Arequipa', 'Which city in Ayacucho', 'Which city in Cajamarca',
@@ -79,9 +83,9 @@ function parseData(rows) {
           break;
         }
       }
-      // If still empty (Chile or other country), use "City" col (AK) or "City.1" fallback
+      // Chile / other countries: Apps Script renamed duplicate City cols with _col_X suffix
       if (!city) {
-        city = String(r['City'] || r['City.1'] || '').trim();
+        city = String(r['City_col_N'] || r['City_col_P'] || r['City_col_L'] || '').trim();
       }
     }
 
