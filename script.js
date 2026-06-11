@@ -187,6 +187,7 @@ async function aggregateByRestaurant(data) {
     const nativeCurrency = getCountryBaseCurrency(g.country);
 
     console.log(`🏪 Processing: ${g.place} (${g.country}) → Native currency: ${nativeCurrency}`);
+    console.log(`   PEN prices: ${g.pricesPEN.length}, USD prices: ${g.pricesUSD.length}, Custom prices: ${g.customPrices.length}`);
 
     // Convert all price arrays to native currency
     const convertedPricePEN = await Promise.all(g.pricesPEN.map(p => convertCurrency(p, 'PEN', nativeCurrency)));
@@ -214,9 +215,8 @@ async function aggregateByRestaurant(data) {
 
     const rating = avg(g.ratings);
     const price = avg(allPrices);
-    const currency = getCurrencySymbol(nativeCurrency);
 
-    console.log(`✅ Final price for ${g.place}: ${price.toFixed(2)} ${nativeCurrency}`);
+    console.log(`✅ Final price for ${g.place}: ${price.toFixed(2)} ${nativeCurrency} (from ${allPrices.length} prices)`);
 
     return {
       place: g.place,
@@ -226,7 +226,6 @@ async function aggregateByRestaurant(data) {
       category: g.category,
       rating,
       price,
-      currency,
       nativeCurrency,
       reviewCount: g.reviewCount,
       notes: g.notes.join(' | ')
@@ -336,7 +335,9 @@ function renderResults() {
     </div>`;
     return;
   }
-  res.innerHTML = filteredData.map(item => `
+  res.innerHTML = filteredData.map(item => {
+    const symbol = getCurrencySymbol(item.nativeCurrency);
+    return `
     <div class="card">
       <div class="card-header">
         <div class="place-name">${escapeHtml(item.place)}</div>
@@ -350,12 +351,13 @@ function renderResults() {
       ${item.category ? `<div class="tags">${item.category.split(',').map(c =>
         `<span class="tag">${escapeHtml(c.trim())}</span>`).join('')}</div>` : ''}
       <div class="price-reviews">
-        <div class="price">${item.currency} ${item.price.toFixed(2)}</div>
+        <div class="price">${item.nativeCurrency} ${symbol} ${item.price.toFixed(2)}</div>
         <div class="reviews">${item.reviewCount} review${item.reviewCount !== 1 ? 's' : ''}</div>
       </div>
       ${item.notes ? `<div class="notes">${escapeHtml(item.notes)}</div>` : ''}
     </div>
-  `).join('');
+    `;
+  }).join('');
 }
 
 function escapeHtml(t) {
