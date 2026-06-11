@@ -38,29 +38,6 @@ function parseData(rows) {
     const customPrice = parseFloat(r['How much did you pay?'] || 0);
     const customCurrency = String(r['What currency did you report?'] || '').trim();
 
-    // Exact column keys after Code.gs deduplication (verified by counting tabs in raw data):
-    //
-    // Peru:     Col H  "Department"              → region ("Ancash", "Lima Downtown", etc.)
-    //           Col W  "Where in Lima"            → Lima Downtown city
-    //           Col X  "Where is Lima"            → Lima District city
-    //           Col I-AH "Which city in X"        → other Peru dept cities
-    //
-    // Chile:    Col AJ "Department/Region/State"  → region (e.g. "Los Lagos")
-    //           Col AK "City"                     → city (e.g. "Puerto Varas")
-    //
-    // Mexico:   Col AK "City"                     → region (e.g. "Test") ← form columns shifted
-    //           Col AL "What currency did you report?" → city (e.g. "Mexico City") ← shifted
-    //           Col AJ "Department/Region/State"  → price (NOT region for Mexico)
-    //
-    // Ecuador:  Col AQ "Province"                 → region (e.g. "Chimborazo")
-    //           Col AR "City_col_AR"               → city (e.g. "test5")
-    //
-    // Guyana:   Col AR "City_col_AR"               → region (e.g. "Mahaica-Berbice")
-    //           Col AS "Region"                    → city (e.g. "123")
-    //
-    // Paraguay: Col AR "City_col_AR"               → region (e.g. "Caazapá")
-    //           Col AS "Region"                    → city (e.g. "test3")
-
     const dept = String(r['Department'] || '').trim();
     const country = String(r['Country'] || '').trim();
 
@@ -97,7 +74,6 @@ function parseData(rows) {
       region = String(r['Department/Region/State'] || '').trim();
       city   = String(r['City'] || '').trim();
     } else if (country === 'Mexico') {
-      // Mexico form columns are shifted: region is in "City" (AK), city in "What currency did you report?" (AL)
       region = String(r['City'] || '').trim();
       city   = String(r['What currency did you report?'] || '').trim();
     } else if (country === 'Ecuador') {
@@ -210,6 +186,8 @@ async function aggregateByRestaurant(data) {
     const avg = arr => arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : 0;
     const nativeCurrency = getCountryBaseCurrency(g.country);
 
+    console.log(`🏪 Processing: ${g.place} (${g.country}) → Native currency: ${nativeCurrency}`);
+
     // Convert all price arrays to native currency
     const convertedPricePEN = await Promise.all(g.pricesPEN.map(p => convertCurrency(p, 'PEN', nativeCurrency)));
     const convertedPriceUSD = await Promise.all(g.pricesUSD.map(p => convertCurrency(p, 'USD', nativeCurrency)));
@@ -221,6 +199,7 @@ async function aggregateByRestaurant(data) {
     for (let i = 0; i < g.customPrices.length; i++) {
       const currencyCode = extractCurrencyCode(g.customCurrencies[i]);
       const converted = await convertCurrency(g.customPrices[i], currencyCode, nativeCurrency);
+      console.log(`💱 Custom price: ${g.customPrices[i]} ${currencyCode} → ${converted.toFixed(2)} ${nativeCurrency}`);
       convertedCustomPrices.push(converted);
     }
 
@@ -231,11 +210,13 @@ async function aggregateByRestaurant(data) {
       ...convertedPricePYG,
       ...convertedPriceGYD,
       ...convertedCustomPrices
-    ];
+    ].filter(p => p > 0); // Only include positive prices
 
     const rating = avg(g.ratings);
     const price = avg(allPrices);
     const currency = getCurrencySymbol(nativeCurrency);
+
+    console.log(`✅ Final price for ${g.place}: ${price.toFixed(2)} ${nativeCurrency}`);
 
     return {
       place: g.place,
