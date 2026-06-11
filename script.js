@@ -14,7 +14,7 @@ async function loadData() {
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const rows = await res.json();
     const parsed = parseData(rows);
-    allData = aggregateByRestaurant(parsed);
+    allData = await aggregateByRestaurant(parsed);
     populateFilters();
     filterData();
     updateLastUpdate();
@@ -151,7 +151,7 @@ function namesMatch(a, b) {
   return na === nb || na.includes(nb) || nb.includes(na);
 }
 
-function aggregateByRestaurant(data) {
+async function aggregateByRestaurant(data) {
   const grouped = [];
 
   data.forEach(item => {
@@ -205,39 +205,37 @@ function aggregateByRestaurant(data) {
     g.category = Array.from(cats).join(', ');
   });
 
-  return grouped.map(g => {
+  // Convert all prices to native country currency
+  return Promise.all(grouped.map(async g => {
     const avg = arr => arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : 0;
+    const nativeCurrency = getCountryBaseCurrency(g.country);
+
+    // Convert all price arrays to native currency
+    const convertedPricePEN = await Promise.all(g.pricesPEN.map(p => convertCurrency(p, 'PEN', nativeCurrency)));
+    const convertedPriceUSD = await Promise.all(g.pricesUSD.map(p => convertCurrency(p, 'USD', nativeCurrency)));
+    const convertedPricePYG = await Promise.all(g.pricesPYG.map(p => convertCurrency(p, 'PYG', nativeCurrency)));
+    const convertedPriceGYD = await Promise.all(g.pricesGYD.map(p => convertCurrency(p, 'GYD', nativeCurrency)));
+    
+    // Combine all custom prices with currency conversion
+    let convertedCustomPrices = [];
+    for (let i = 0; i < g.customPrices.length; i++) {
+      const currencyCode = extractCurrencyCode(g.customCurrencies[i]);
+      const converted = await convertCurrency(g.customPrices[i], currencyCode, nativeCurrency);
+      convertedCustomPrices.push(converted);
+    }
+
+    // Merge all converted prices into one array for averaging
+    const allPrices = [
+      ...convertedPricePEN,
+      ...convertedPriceUSD,
+      ...convertedPricePYG,
+      ...convertedPriceGYD,
+      ...convertedCustomPrices
+    ];
 
     const rating = avg(g.ratings);
-    const penPrice = avg(g.pricesPEN);
-    const usdPrice = avg(g.pricesUSD);
-    const pygPrice = avg(g.pricesPYG);
-    const gydPrice = avg(g.pricesGYD);
-    const customPrice = avg(g.customPrices);
-
-    let price = 0;
-    let currency = '';
-
-    if (g.country === 'Peru') {
-      price = penPrice;
-      currency = 'PEN S/.';
-    } else if (g.country === 'Paraguay') {
-      price = pygPrice;
-      currency = 'PYG ₲';
-    } else if (g.country === 'Guyana') {
-      price = gydPrice;
-      currency = 'GYD G$';
-    } else if (g.customPrices.length > 0) {
-      price = customPrice;
-      const currencyCounts = {};
-      g.customCurrencies.forEach(c => {
-        currencyCounts[c] = (currencyCounts[c] || 0) + 1;
-      });
-      currency = Object.keys(currencyCounts).sort((a, b) => currencyCounts[b] - currencyCounts[a])[0] || '';
-    } else {
-      price = usdPrice;
-      currency = 'USD $';
-    }
+    const price = avg(allPrices);
+    const currency = getCurrencySymbol(nativeCurrency);
 
     return {
       place: g.place,
@@ -248,10 +246,11 @@ function aggregateByRestaurant(data) {
       rating,
       price,
       currency,
+      nativeCurrency,
       reviewCount: g.reviewCount,
       notes: g.notes.join(' | ')
     };
-  });
+  }));
 }
 
 function populateFilters() {
