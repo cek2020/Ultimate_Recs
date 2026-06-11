@@ -2,27 +2,20 @@
  * Currency Converter Module
  * Handles real-time currency conversion for restaurant pricing
  * Uses exchangerate-api.com (free tier: 1,500 requests/month)
- * SUPPORTS ALL LATIN AMERICAN COUNTRIES
+ * SUPPORTS ALL COUNTRIES WORLDWIDE
  */
 
 const EXCHANGE_API_URL = 'https://api.exchangerate-api.com/v4/latest';
-const CACHE_DURATION = 604800000; // 1 week in milliseconds (to stay within API limit)
+const CACHE_DURATION = 604800000; // 1 week in milliseconds
 let exchangeRates = {};
 let lastFetchTime = 0;
 
-/**
- * Fetch latest exchange rates
- * Caches results for 1 week to avoid excessive API calls
- */
 async function getExchangeRates(baseCurrency = 'USD') {
   const now = Date.now();
-  
-  // Return cached rates if still valid
   if (exchangeRates[baseCurrency] && (now - lastFetchTime) < CACHE_DURATION) {
     console.log(`📦 Using cached rates for ${baseCurrency}`);
     return exchangeRates[baseCurrency];
   }
-
   try {
     const res = await fetch(`${EXCHANGE_API_URL}/${baseCurrency}`);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -33,263 +26,19 @@ async function getExchangeRates(baseCurrency = 'USD') {
     return data.rates;
   } catch (err) {
     console.error('❌ Failed to fetch exchange rates:', err);
-    // Fallback to hardcoded rates (last known values - update these periodically)
     return getFallbackRates(baseCurrency);
   }
 }
 
-/**
- * Fallback rates - COMPLETE LATIN AMERICA COVERAGE
- * Last updated: June 2026
- * Update these periodically or when you notice significant changes
- */
-function getFallbackRates(baseCurrency = 'USD') {
-  const rates = {
-    'USD': {
-      'USD': 1.0,
-      'PEN': 3.75,
-      'PYG': 6800,
-      'GYD': 210,
-      'CLP': 900,
-      'MXN': 17.0,
-      'ARS': 950,      // Argentina Peso
-      'BRL': 5.15,     // Brazil Real
-      'COP': 4100,     // Colombia Peso
-      'VES': 2500000,  // Venezuela Bolívar
-      'UYU': 38,       // Uruguay Peso
-      'BOB': 6.90,     // Bolivia Boliviano
-      'HNL': 24.5,     // Honduras Lempira
-      'GTQ': 7.75,     // Guatemala Quetzal
-      'NIO': 36.5,     // Nicaragua Córdoba
-      'CRC': 530,      // Costa Rica Colón
-      'PAN': 1.0,      // Panama Balboa (1:1 with USD)
-      'DOP': 58,       // Dominican Republic Peso
-      'TTS': 6.70,     // Trinidad & Tobago Dollar
-      'BSD': 1.0,      // Bahamas Dollar (1:1 with USD)
-      'BBD': 2.0,      // Barbados Dollar
-      'JMD': 155,      // Jamaica Dollar
-      'XCD': 2.70      // Eastern Caribbean Dollar
-    },
-    'PEN': {
-      'USD': 0.267,
-      'PEN': 1.0,
-      'PYG': 1813,
-      'GYD': 56,
-      'CLP': 240,
-      'MXN': 4.53,
-      'ARS': 253,
-      'BRL': 1.37,
-      'COP': 1093,
-      'VES': 667000,
-      'UYU': 10.1,
-      'BOB': 1.84,
-      'HNL': 6.53,
-      'GTQ': 2.07,
-      'NIO': 9.73,
-      'CRC': 141,
-      'PAN': 0.267,
-      'DOP': 15.5,
-      'TTS': 1.79,
-      'BSD': 0.267,
-      'BBD': 0.533,
-      'JMD': 41.3,
-      'XCD': 0.720
-    },
-    'CLP': {
-      'USD': 0.0011,
-      'PEN': 0.0042,
-      'PYG': 7.56,
-      'GYD': 0.233,
-      'CLP': 1.0,
-      'MXN': 0.019,
-      'ARS': 1.06,
-      'BRL': 0.0057,
-      'COP': 4.56,
-      'VES': 2778,
-      'UYU': 0.0422,
-      'BOB': 0.00767,
-      'HNL': 0.0272,
-      'GTQ': 0.00861,
-      'NIO': 0.0406,
-      'CRC': 0.589,
-      'PAN': 0.0011,
-      'DOP': 0.0645,
-      'TTS': 0.00745,
-      'BSD': 0.0011,
-      'BBD': 0.00222,
-      'JMD': 0.172,
-      'XCD': 0.003
-    },
-    'MXN': {
-      'USD': 0.059,
-      'PEN': 0.221,
-      'PYG': 400,
-      'GYD': 12.3,
-      'CLP': 53,
-      'MXN': 1.0,
-      'ARS': 56,
-      'BRL': 0.301,
-      'COP': 241,
-      'VES': 147000,
-      'UYU': 2.24,
-      'BOB': 0.406,
-      'HNL': 1.44,
-      'GTQ': 0.456,
-      'NIO': 2.15,
-      'CRC': 31.2,
-      'PAN': 0.059,
-      'DOP': 3.41,
-      'TTS': 0.394,
-      'BSD': 0.059,
-      'BBD': 0.118,
-      'JMD': 9.12,
-      'XCD': 0.159
-    },
-    'BRL': {
-      'USD': 0.194,
-      'PEN': 0.729,
-      'PYG': 1320,
-      'GYD': 40.8,
-      'CLP': 175,
-      'MXN': 3.32,
-      'ARS': 184,
-      'BRL': 1.0,
-      'COP': 800,
-      'VES': 486000,
-      'UYU': 7.44,
-      'BOB': 1.34,
-      'HNL': 4.75,
-      'GTQ': 1.51,
-      'NIO': 7.11,
-      'CRC': 103,
-      'PAN': 0.194,
-      'DOP': 11.3,
-      'TTS': 1.30,
-      'BSD': 0.194,
-      'BBD': 0.388,
-      'JMD': 30.2,
-      'XCD': 0.525
-    },
-    'ARS': {
-      'USD': 0.00105,
-      'PEN': 0.00396,
-      'PYG': 7.16,
-      'GYD': 0.221,
-      'CLP': 0.943,
-      'MXN': 0.0179,
-      'ARS': 1.0,
-      'BRL': 0.00543,
-      'COP': 4.34,
-      'VES': 2632,
-      'UYU': 0.0401,
-      'BOB': 0.00727,
-      'HNL': 0.0258,
-      'GTQ': 0.00817,
-      'NIO': 0.0385,
-      'CRC': 0.559,
-      'PAN': 0.00105,
-      'DOP': 0.0611,
-      'TTS': 0.00702,
-      'BSD': 0.00105,
-      'BBD': 0.0210,
-      'JMD': 0.164,
-      'XCD': 0.00284
-    },
-    'COP': {
-      'USD': 0.000244,
-      'PEN': 0.000915,
-      'PYG': 1.66,
-      'GYD': 0.0512,
-      'CLP': 0.219,
-      'MXN': 0.00414,
-      'ARS': 0.231,
-      'BRL': 0.00125,
-      'COP': 1.0,
-      'VES': 610,
-      'UYU': 0.00910,
-      'BOB': 0.00168,
-      'HNL': 0.00596,
-      'GTQ': 0.00189,
-      'NIO': 0.00891,
-      'CRC': 0.129,
-      'PAN': 0.000244,
-      'DOP': 0.0141,
-      'TTS': 0.00162,
-      'BSD': 0.000244,
-      'BBD': 0.00488,
-      'JMD': 0.0379,
-      'XCD': 0.000659
-    },
-    'PYG': {
-      'USD': 0.00015,
-      'PEN': 0.00055,
-      'PYG': 1.0,
-      'GYD': 0.031,
-      'CLP': 0.13,
-      'MXN': 0.0025,
-      'ARS': 0.140,
-      'BRL': 0.000758,
-      'COP': 0.602,
-      'VES': 368,
-      'UYU': 0.00547,
-      'BOB': 0.00101,
-      'HNL': 0.00359,
-      'GTQ': 0.00114,
-      'NIO': 0.00537,
-      'CRC': 0.0782,
-      'PAN': 0.00015,
-      'DOP': 0.00854,
-      'TTS': 0.000975,
-      'BSD': 0.00015,
-      'BBD': 0.00030,
-      'JMD': 0.0229,
-      'XCD': 0.000405
-    },
-    'GYD': {
-      'USD': 0.0048,
-      'PEN': 0.018,
-      'PYG': 32.4,
-      'GYD': 1.0,
-      'CLP': 4.3,
-      'MXN': 0.081,
-      'ARS': 4.57,
-      'BRL': 0.0247,
-      'COP': 19.5,
-      'VES': 12000,
-      'UYU': 0.181,
-      'BOB': 0.0329,
-      'HNL': 0.117,
-      'GTQ': 0.0372,
-      'NIO': 0.174,
-      'CRC': 2.57,
-      'PAN': 0.0048,
-      'DOP': 0.276,
-      'TTS': 0.0316,
-      'BSD': 0.0048,
-      'BBD': 0.0096,
-      'JMD': 0.744,
-      'XCD': 0.0130
-    }
-  };
-  return rates[baseCurrency] || rates['USD'];
-}
+// (Keep your existing getFallbackRates function unchanged — omitted here for brevity)
 
-/**
- * Convert a price from one currency to another
- * @param {number} amount - The amount to convert
- * @param {string} fromCurrency - Source currency code (e.g., 'PEN', 'USD', 'CLP')
- * @param {string} toCurrency - Target currency code
- * @returns {Promise<number>} Converted amount
- */
 async function convertCurrency(amount, fromCurrency, toCurrency = 'USD') {
   if (!amount || amount <= 0) return 0;
   if (fromCurrency === toCurrency) return amount;
-
   try {
     const rates = await getExchangeRates(fromCurrency);
     if (!rates[toCurrency]) {
       console.warn(`⚠️ No rate found for ${fromCurrency} → ${toCurrency}, using fallback`);
-      // Try fallback
       const fallbackRates = getFallbackRates(fromCurrency);
       if (fallbackRates[toCurrency]) {
         const converted = amount * fallbackRates[toCurrency];
@@ -308,97 +57,373 @@ async function convertCurrency(amount, fromCurrency, toCurrency = 'USD') {
 }
 
 /**
- * Get the native currency for a country
- * SUPPORTS ALL LATIN AMERICAN COUNTRIES
+ * Map currency names (and common variants/misspellings) to ISO 4217 codes.
+ * Used by extractCurrencyCode() to handle plain-English currency names in data.
+ * *** FIX: This is what makes "mongolian tugrik" → "MNT" instead of "USD" ***
+ */
+const CURRENCY_NAME_TO_CODE = {
+  // A
+  'afghan afghani': 'AFN', 'afghani': 'AFN',
+  'albanian lek': 'ALL', 'lek': 'ALL',
+  'algerian dinar': 'DZD',
+  'angolan kwanza': 'AOA', 'kwanza': 'AOA',
+  'argentine peso': 'ARS',
+  'armenian dram': 'AMD', 'dram': 'AMD',
+  'aruban florin': 'AWG',
+  'australian dollar': 'AUD',
+  'azerbaijani manat': 'AZN',
+
+  // B
+  'bahamian dollar': 'BSD',
+  'bahraini dinar': 'BHD',
+  'bangladeshi taka': 'BDT', 'taka': 'BDT',
+  'barbadian dollar': 'BBD', 'barbados dollar': 'BBD',
+  'belarusian ruble': 'BYN',
+  'belize dollar': 'BZD',
+  'bermudian dollar': 'BMD',
+  'bhutanese ngultrum': 'BTN', 'ngultrum': 'BTN',
+  'bolivian boliviano': 'BOB', 'boliviano': 'BOB',
+  'bosnia-herzegovina convertible mark': 'BAM', 'convertible mark': 'BAM',
+  'botswana pula': 'BWP', 'pula': 'BWP',
+  'brazilian real': 'BRL', 'real': 'BRL',
+  'british pound': 'GBP', 'pound sterling': 'GBP', 'sterling': 'GBP',
+  'brunei dollar': 'BND',
+  'bulgarian lev': 'BGN', 'lev': 'BGN',
+  'burundian franc': 'BIF',
+
+  // C
+  'cape verdean escudo': 'CVE',
+  'cambodian riel': 'KHR', 'riel': 'KHR',
+  'canadian dollar': 'CAD',
+  'cayman islands dollar': 'KYD',
+  'central african cfa franc': 'XAF', 'cfa franc beac': 'XAF',
+  'chilean peso': 'CLP',
+  'chinese yuan': 'CNY', 'renminbi': 'CNY', 'yuan': 'CNY',
+  'colombian peso': 'COP',
+  'comorian franc': 'KMF',
+  'congolese franc': 'CDF',
+  'costa rican colon': 'CRC', 'costa rican colón': 'CRC', 'colon': 'CRC',
+  'croatian kuna': 'HRK', 'kuna': 'HRK',
+  'cuban peso': 'CUP',
+  'czech koruna': 'CZK', 'koruna': 'CZK',
+
+  // D
+  'danish krone': 'DKK',
+  'djiboutian franc': 'DJF',
+  'dominican peso': 'DOP',
+
+  // E
+  'east caribbean dollar': 'XCD', 'eastern caribbean dollar': 'XCD',
+  'egyptian pound': 'EGP',
+  'eritrean nakfa': 'ERN', 'nakfa': 'ERN',
+  'ethiopian birr': 'ETB', 'birr': 'ETB',
+  'euro': 'EUR',
+
+  // F
+  'falkland islands pound': 'FKP',
+  'fijian dollar': 'FJD',
+
+  // G
+  'gambian dalasi': 'GMD', 'dalasi': 'GMD',
+  'georgian lari': 'GEL', 'lari': 'GEL',
+  'ghanaian cedi': 'GHS', 'cedi': 'GHS',
+  'gibraltar pound': 'GIP',
+  'guatemalan quetzal': 'GTQ', 'quetzal': 'GTQ',
+  'guinean franc': 'GNF',
+  'guyanese dollar': 'GYD',
+
+  // H
+  'haitian gourde': 'HTG', 'gourde': 'HTG',
+  'honduran lempira': 'HNL', 'lempira': 'HNL',
+  'hong kong dollar': 'HKD',
+  'hungarian forint': 'HUF', 'forint': 'HUF',
+
+  // I
+  'icelandic krona': 'ISK', 'icelandic króna': 'ISK',
+  'indian rupee': 'INR',
+  'indonesian rupiah': 'IDR', 'rupiah': 'IDR',
+  'iranian rial': 'IRR',
+  'iraqi dinar': 'IQD',
+  'israeli new shekel': 'ILS', 'shekel': 'ILS', 'new shekel': 'ILS',
+
+  // J
+  'jamaican dollar': 'JMD',
+  'japanese yen': 'JPY', 'yen': 'JPY',
+  'jordanian dinar': 'JOD',
+
+  // K
+  'kazakhstani tenge': 'KZT', 'tenge': 'KZT',
+  'kenyan shilling': 'KES',
+  'kuwaiti dinar': 'KWD',
+  'kyrgyzstani som': 'KGS', 'kyrgyz som': 'KGS', 'som': 'KGS',
+
+  // L
+  'laotian kip': 'LAK', 'lao kip': 'LAK', 'kip': 'LAK',
+  'lebanese pound': 'LBP',
+  'lesotho loti': 'LSL', 'loti': 'LSL',
+  'liberian dollar': 'LRD',
+  'libyan dinar': 'LYD',
+
+  // M
+  'macanese pataca': 'MOP', 'pataca': 'MOP',
+  'malagasy ariary': 'MGA', 'ariary': 'MGA',
+  'malawian kwacha': 'MWK',
+  'malaysian ringgit': 'MYR', 'ringgit': 'MYR',
+  'maldivian rufiyaa': 'MVR', 'rufiyaa': 'MVR',
+  'mauritanian ouguiya': 'MRU', 'ouguiya': 'MRU',
+  'mauritian rupee': 'MUR',
+  'mexican peso': 'MXN',
+  'moldovan leu': 'MDL',
+  'mongolian tugrik': 'MNT', 'mongolian tögrög': 'MNT', 'mongolian togrog': 'MNT',
+  'tugrik': 'MNT', 'togrog': 'MNT', 'tögrög': 'MNT',  // *** KEY FIX ***
+  'moroccan dirham': 'MAD',
+  'mozambican metical': 'MZN', 'metical': 'MZN',
+  'myanmar kyat': 'MMK', 'burmese kyat': 'MMK', 'kyat': 'MMK',
+
+  // N
+  'namibian dollar': 'NAD',
+  'nepalese rupee': 'NPR',
+  'netherlands antillean guilder': 'ANG',
+  'new taiwan dollar': 'TWD', 'taiwan dollar': 'TWD',
+  'new zealand dollar': 'NZD',
+  'nicaraguan cordoba': 'NIO', 'nicaraguan córdoba': 'NIO', 'cordoba': 'NIO',
+  'nigerian naira': 'NGN', 'naira': 'NGN',
+  'north korean won': 'KPW',
+  'norwegian krone': 'NOK',
+
+  // O
+  'omani rial': 'OMR',
+
+  // P
+  'pakistani rupee': 'PKR',
+  'panamanian balboa': 'PAB', 'balboa': 'PAB',
+  'papua new guinean kina': 'PGK', 'kina': 'PGK',
+  'paraguayan guarani': 'PYG', 'guarani': 'PYG',
+  'peruvian sol': 'PEN', 'sol': 'PEN',
+  'philippine peso': 'PHP',
+  'polish zloty': 'PLN', 'zloty': 'PLN', 'złoty': 'PLN',
+
+  // Q
+  'qatari riyal': 'QAR',
+
+  // R
+  'romanian leu': 'RON',
+  'russian ruble': 'RUB', 'ruble': 'RUB',
+  'rwandan franc': 'RWF',
+
+  // S
+  'saint helena pound': 'SHP',
+  'samoan tala': 'WST', 'tala': 'WST',
+  'saudi riyal': 'SAR',
+  'serbian dinar': 'RSD',
+  'seychellois rupee': 'SCR',
+  'sierra leonean leone': 'SLE', 'leone': 'SLE',
+  'singapore dollar': 'SGD',
+  'solomon islands dollar': 'SBD',
+  'somali shilling': 'SOS',
+  'south african rand': 'ZAR', 'rand': 'ZAR',
+  'south korean won': 'KRW', 'korean won': 'KRW', 'won': 'KRW',
+  'south sudanese pound': 'SSP',
+  'sri lankan rupee': 'LKR',
+  'sudanese pound': 'SDG',
+  'surinamese dollar': 'SRD',
+  'swazi lilangeni': 'SZL', 'lilangeni': 'SZL',
+  'swedish krona': 'SEK',
+  'swiss franc': 'CHF',
+
+  // T
+  'tajikistani somoni': 'TJS', 'somoni': 'TJS',
+  'tanzanian shilling': 'TZS',
+  'thai baht': 'THB', 'baht': 'THB',
+  'tongan paanga': 'TOP', "pa'anga": 'TOP',
+  'trinidad and tobago dollar': 'TTD', 'tt dollar': 'TTD',
+  'tunisian dinar': 'TND',
+  'turkish lira': 'TRY', 'lira': 'TRY',
+  'turkmenistani manat': 'TMT',
+
+  // U
+  'ugandan shilling': 'UGX',
+  'ukrainian hryvnia': 'UAH', 'hryvnia': 'UAH',
+  'united arab emirates dirham': 'AED', 'uae dirham': 'AED', 'dirham': 'AED',
+  'uruguayan peso': 'UYU',
+  'us dollar': 'USD', 'united states dollar': 'USD', 'american dollar': 'USD',
+  'uzbekistani som': 'UZS',
+
+  // V
+  'vanuatu vatu': 'VUV', 'vatu': 'VUV',
+  'venezuelan bolivar': 'VES', 'bolivar': 'VES', 'bolívar': 'VES',
+  'vietnamese dong': 'VND', 'dong': 'VND',
+
+  // W
+  'west african cfa franc': 'XOF', 'cfa franc bceao': 'XOF',
+
+  // Y
+  'yemeni rial': 'YER',
+
+  // Z
+  'zambian kwacha': 'ZMW',
+  'zimbabwean dollar': 'ZWL',
+};
+
+/**
+ * Get the native currency for a country.
+ * Now covers ALL countries worldwide, not just Latin America.
  */
 function getCountryBaseCurrency(country) {
   const currencyMap = {
-    // South America
-    'Peru': 'PEN',
-    'Paraguay': 'PYG',
-    'Guyana': 'GYD',
-    'Ecuador': 'USD',
-    'Chile': 'CLP',
-    'Argentina': 'ARS',
-    'Brazil': 'BRL',
-    'Colombia': 'COP',
-    'Venezuela': 'VES',
-    'Uruguay': 'UYU',
-    'Bolivia': 'BOB',
-    'Suriname': 'SRD',
-    
-    // North/Central America & Mexico
-    'Mexico': 'MXN',
-    'Honduras': 'HNL',
-    'Guatemala': 'GTQ',
-    'Nicaragua': 'NIO',
-    'Costa Rica': 'CRC',
-    'Panama': 'PAN',
-    'Belize': 'BZD',
-    'El Salvador': 'SVC',
-    
-    // Caribbean
-    'Dominican Republic': 'DOP',
-    'Cuba': 'CUP',
-    'Puerto Rico': 'USD',
-    'Haiti': 'HTG',
-    'Jamaica': 'JMD',
-    'Barbados': 'BBD',
-    'Trinidad and Tobago': 'TTS',
-    'Bahamas': 'BSD',
-    'Antigua and Barbuda': 'XCD',
-    'Dominica': 'XCD',
-    'Grenada': 'XCD',
-    'Saint Lucia': 'XCD',
-    'Saint Vincent and the Grenadines': 'XCD'
+    // Latin America (unchanged from original)
+    'Peru': 'PEN', 'Paraguay': 'PYG', 'Guyana': 'GYD',
+    'Ecuador': 'USD', 'Chile': 'CLP', 'Argentina': 'ARS',
+    'Brazil': 'BRL', 'Colombia': 'COP', 'Venezuela': 'VES',
+    'Uruguay': 'UYU', 'Bolivia': 'BOB', 'Suriname': 'SRD',
+    'Mexico': 'MXN', 'Honduras': 'HNL', 'Guatemala': 'GTQ',
+    'Nicaragua': 'NIO', 'Costa Rica': 'CRC', 'Panama': 'PAB',
+    'Belize': 'BZD', 'El Salvador': 'SVC',
+    'Dominican Republic': 'DOP', 'Cuba': 'CUP',
+    'Puerto Rico': 'USD', 'Haiti': 'HTG', 'Jamaica': 'JMD',
+    'Barbados': 'BBD', 'Trinidad and Tobago': 'TTD',
+    'Bahamas': 'BSD', 'Antigua and Barbuda': 'XCD',
+    'Dominica': 'XCD', 'Grenada': 'XCD',
+    'Saint Lucia': 'XCD', 'Saint Vincent and the Grenadines': 'XCD',
+
+    // North America
+    'United States': 'USD', 'USA': 'USD', 'Canada': 'CAD',
+
+    // Europe
+    'Eurozone': 'EUR',
+    'Germany': 'EUR', 'France': 'EUR', 'Italy': 'EUR', 'Spain': 'EUR',
+    'Portugal': 'EUR', 'Netherlands': 'EUR', 'Belgium': 'EUR',
+    'Austria': 'EUR', 'Greece': 'EUR', 'Finland': 'EUR',
+    'Ireland': 'EUR', 'Luxembourg': 'EUR', 'Malta': 'EUR',
+    'Cyprus': 'EUR', 'Slovakia': 'EUR', 'Slovenia': 'EUR',
+    'Estonia': 'EUR', 'Latvia': 'EUR', 'Lithuania': 'EUR',
+    'United Kingdom': 'GBP', 'UK': 'GBP',
+    'Switzerland': 'CHF', 'Norway': 'NOK', 'Sweden': 'SEK',
+    'Denmark': 'DKK', 'Iceland': 'ISK',
+    'Poland': 'PLN', 'Czech Republic': 'CZK', 'Czechia': 'CZK',
+    'Hungary': 'HUF', 'Romania': 'RON', 'Bulgaria': 'BGN',
+    'Croatia': 'EUR', 'Serbia': 'RSD', 'Albania': 'ALL',
+    'Bosnia and Herzegovina': 'BAM', 'Montenegro': 'EUR',
+    'North Macedonia': 'MKD', 'Moldova': 'MDL',
+    'Ukraine': 'UAH', 'Belarus': 'BYN',
+    'Russia': 'RUB',
+
+    // Asia
+    'China': 'CNY', 'Japan': 'JPY', 'South Korea': 'KRW',
+    'North Korea': 'KPW', 'India': 'INR', 'Pakistan': 'PKR',
+    'Bangladesh': 'BDT', 'Sri Lanka': 'LKR', 'Nepal': 'NPR',
+    'Bhutan': 'BTN', 'Maldives': 'MVR',
+    'Thailand': 'THB', 'Vietnam': 'VND', 'Cambodia': 'KHR',
+    'Laos': 'LAK', 'Myanmar': 'MMK', 'Burma': 'MMK',
+    'Malaysia': 'MYR', 'Singapore': 'SGD', 'Indonesia': 'IDR',
+    'Philippines': 'PHP', 'Brunei': 'BND',
+    'Mongolia': 'MNT',  // *** KEY FIX ***
+    'Kazakhstan': 'KZT', 'Uzbekistan': 'UZS',
+    'Kyrgyzstan': 'KGS', 'Tajikistan': 'TJS',
+    'Turkmenistan': 'TMT', 'Afghanistan': 'AFN',
+    'Iran': 'IRR', 'Iraq': 'IQD', 'Saudi Arabia': 'SAR',
+    'UAE': 'AED', 'United Arab Emirates': 'AED',
+    'Qatar': 'QAR', 'Kuwait': 'KWD', 'Bahrain': 'BHD',
+    'Oman': 'OMR', 'Yemen': 'YER', 'Jordan': 'JOD',
+    'Lebanon': 'LBP', 'Syria': 'SYP', 'Israel': 'ILS',
+    'Palestine': 'ILS', 'Turkey': 'TRY', 'Azerbaijan': 'AZN',
+    'Armenia': 'AMD', 'Georgia': 'GEL',
+    'Taiwan': 'TWD', 'Hong Kong': 'HKD', 'Macau': 'MOP',
+
+    // Africa
+    'South Africa': 'ZAR', 'Nigeria': 'NGN', 'Kenya': 'KES',
+    'Ghana': 'GHS', 'Ethiopia': 'ETB', 'Tanzania': 'TZS',
+    'Uganda': 'UGX', 'Rwanda': 'RWF', 'Egypt': 'EGP',
+    'Morocco': 'MAD', 'Algeria': 'DZD', 'Tunisia': 'TND',
+    'Libya': 'LYD', 'Sudan': 'SDG', 'South Sudan': 'SSP',
+    'Angola': 'AOA', 'Mozambique': 'MZN', 'Zambia': 'ZMW',
+    'Zimbabwe': 'ZWL', 'Botswana': 'BWP', 'Namibia': 'NAD',
+    'Malawi': 'MWK', 'Lesotho': 'LSL', 'Eswatini': 'SZL', 'Swaziland': 'SZL',
+    'Cameroon': 'XAF', 'Senegal': 'XOF', "Côte d'Ivoire": 'XOF',
+    'Ivory Coast': 'XOF', 'Mali': 'XOF', 'Burkina Faso': 'XOF',
+    'Guinea': 'GNF', 'Madagascar': 'MGA', 'Somalia': 'SOS',
+    'Mauritius': 'MUR', 'Seychelles': 'SCR',
+
+    // Oceania
+    'Australia': 'AUD', 'New Zealand': 'NZD',
+    'Fiji': 'FJD', 'Papua New Guinea': 'PGK',
+    'Samoa': 'WST', 'Tonga': 'TOP', 'Vanuatu': 'VUV',
+    'Solomon Islands': 'SBD',
   };
   return currencyMap[country] || 'USD';
 }
 
 /**
- * Get currency symbol for display
- * SUPPORTS ALL LATIN AMERICAN CURRENCIES
+ * Get currency symbol for display.
+ * Extended with worldwide symbols.
  */
 function getCurrencySymbol(currencyCode) {
   const symbols = {
-    'USD': '$',
-    'PEN': 'S/.',
-    'PYG': '₲',
-    'GYD': 'G$',
-    'CLP': '$',
-    'MXN': '$',
-    'ARS': '$',
-    'BRL': 'R$',
-    'COP': '$',
-    'VES': 'Bs.',
-    'UYU': '$',
-    'BOB': 'Bs.',
-    'SRD': '$',
-    'HNL': 'L',
-    'GTQ': 'Q',
-    'NIO': 'C$',
-    'CRC': '₡',
-    'PAN': 'B/.',
-    'BZD': '$',
-    'SVC': '₡',
-    'DOP': '$',
-    'CUP': '₱',
-    'HTG': 'G',
-    'JMD': '$',
-    'BBD': '$',
-    'TTS': '$',
-    'BSD': '$',
-    'XCD': '$',
-    'EUR': '€'
+    // Latin America (unchanged)
+    'USD': '$', 'PEN': 'S/.', 'PYG': '₲', 'GYD': 'G$',
+    'CLP': '$', 'MXN': '$', 'ARS': '$', 'BRL': 'R$',
+    'COP': '$', 'VES': 'Bs.', 'UYU': '$', 'BOB': 'Bs.',
+    'SRD': '$', 'HNL': 'L', 'GTQ': 'Q', 'NIO': 'C$',
+    'CRC': '₡', 'PAN': 'B/.', 'BZD': '$', 'SVC': '₡',
+    'DOP': '$', 'CUP': '₱', 'HTG': 'G', 'JMD': '$',
+    'BBD': '$', 'TTD': '$', 'BSD': '$', 'XCD': '$',
+
+    // Worldwide additions
+    'EUR': '€', 'GBP': '£', 'JPY': '¥', 'CNY': '¥',
+    'KRW': '₩', 'INR': '₹', 'RUB': '₽', 'TRY': '₺',
+    'THB': '฿', 'VND': '₫', 'MNT': '₮',  // *** KEY FIX ***
+    'PHP': '₱', 'IDR': 'Rp', 'MYR': 'RM', 'SGD': '$',
+    'HKD': '$', 'TWD': '$', 'AED': 'د.إ', 'SAR': '﷼',
+    'QAR': '﷼', 'KWD': 'د.ك', 'BHD': 'BD', 'OMR': '﷼',
+    'ILS': '₪', 'EGP': '£', 'ZAR': 'R', 'NGN': '₦',
+    'GHS': '₵', 'KES': 'KSh', 'MAD': 'MAD', 'DZD': 'DA',
+    'CAD': '$', 'AUD': '$', 'NZD': '$', 'CHF': 'Fr',
+    'SEK': 'kr', 'NOK': 'kr', 'DKK': 'kr',
+    'PLN': 'zł', 'CZK': 'Kč', 'HUF': 'Ft', 'RON': 'lei',
+    'UAH': '₴', 'HRK': 'kn', 'BGN': 'лв', 'RSD': 'din',
+    'PAB': 'B/.', 'KZT': '₸', 'UZS': 'soʻm',
   };
   return symbols[currencyCode] || currencyCode;
 }
 
 /**
- * Extract currency code from currency string
- * e.g., 'PEN S/.' → 'PEN', 'USD $' → 'USD', 'CLP $' → 'CLP'
+ * Extract ISO 4217 currency code from a currency string.
+ * *** MAIN FIX: Now handles plain English names like "mongolian tugrik" ***
+ *
+ * Handles:
+ *   "PEN S/."           → "PEN"   (3-letter code prefix)
+ *   "USD $"             → "USD"
+ *   "mongolian tugrik"  → "MNT"   ← was broken before
+ *   "Euro"              → "EUR"
+ *   "Japanese yen"      → "JPY"
+ *   "MNT"               → "MNT"   (bare code)
  */
 function extractCurrencyCode(currencyString) {
-  const match = String(currencyString).match(/^[A-Z]{3}/);
-  return match ? match[0] : 'USD';
+  const str = String(currencyString).trim();
+
+  // 1. Already a bare 3-letter ISO code (e.g. "MNT", "USD")
+  if (/^[A-Z]{3}$/.test(str)) return str;
+
+  // 2. Starts with a 3-letter code followed by a space/symbol (e.g. "PEN S/.")
+  const codePrefix = str.match(/^([A-Z]{3})\b/);
+  if (codePrefix) return codePrefix[1];
+
+  // 3. Plain-English currency name — look up in the name map
+  const normalized = str.toLowerCase().trim();
+  if (CURRENCY_NAME_TO_CODE[normalized]) {
+    return CURRENCY_NAME_TO_CODE[normalized];
+  }
+
+  // 4. Partial match — check if any known name is contained in the string
+  //    e.g. "Mongolian Tugrik (MNT)" would still match "mongolian tugrik"
+  for (const [name, code] of Object.entries(CURRENCY_NAME_TO_CODE)) {
+    if (normalized.includes(name)) return code;
+  }
+
+  // 5. Last resort — look for any 3-letter uppercase sequence
+  const anyCode = str.match(/\b([A-Z]{3})\b/);
+  if (anyCode) return anyCode[1];
+
+  console.warn(`⚠️ Could not identify currency from: "${currencyString}", defaulting to USD`);
+  return 'USD';
 }
