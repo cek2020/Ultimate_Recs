@@ -117,10 +117,8 @@ select:focus {
     font-weight: 400;
     text-decoration: underline;
     cursor: pointer;
+     margin-left: auto;
 
-    /* Positioning */
-    align-self: flex-end;  /* Right side if parent is display:flex */
-    width: auto;
 }
 
 .clear-btn:hover {
