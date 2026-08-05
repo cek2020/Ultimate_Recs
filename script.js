@@ -47,7 +47,7 @@ function parseData(rows) {
     if (dept) {
       // Peru — department is set
       region = dept;
-      if (dept === 'Lima Downtown') {
+      if (dept === 'Lima City') {
         city = String(r['Where in Lima'] || '').trim();
       } else if (dept === 'Lima District') {
         city = String(r['Where is Lima'] || '').trim();
