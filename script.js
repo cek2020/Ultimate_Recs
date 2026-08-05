@@ -111,7 +111,7 @@ function normalizePlaceName(name) {
   return name
     .toLowerCase()
     .normalize('NFD')
-    .replace(/[00-\u036f]/g, '')
+    .replace(/[\u0300-\u036f]/g, '')
     .replace(/[^\w\s]/g, '')
     .replace(/\bc\d+\b/g, '')
     .replace(/\blocal\s*\d+\b/g, '')
