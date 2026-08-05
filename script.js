@@ -47,7 +47,7 @@ function parseData(rows) {
     if (dept) {
       // Peru — department is set
       region = dept;
-      if (dept === 'Lima Downtown') {
+      if (dept === 'Lima Downtown' || dept === 'Lima City') {
         city = String(r['Where in Lima'] || '').trim();
       } else if (dept === 'Lima District') {
         city = String(r['Where is Lima'] || '').trim();
@@ -111,7 +111,7 @@ function normalizePlaceName(name) {
   return name
     .toLowerCase()
     .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[00-\u036f]/g, '')
     .replace(/[^\w\s]/g, '')
     .replace(/\bc\d+\b/g, '')
     .replace(/\blocal\s*\d+\b/g, '')
