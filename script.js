@@ -16,6 +16,7 @@ async function loadData() {
     const parsed = parseData(rows);
     allData = await aggregateByRestaurant(parsed);
     populateFilters();
+    populateCategoryOptions();
     filterData();
     updateLastUpdate();
   } catch (err) {
@@ -250,21 +251,53 @@ function populateFilters() {
 function selFill(id, set) {
   let arr = [...set].filter(Boolean).sort();
   arr.unshift('All');
-  document.getElementById(id).innerHTML = arr.map(v => `<option>${v}</option>`).join('');
+  const select = document.getElementById(id);
+  if (!select) return;
+  select.innerHTML = arr.map(v => `<option value="${v}">${v}</option>`).join('');
+  const currentValue = select.dataset.selected || 'All';
+  select.value = arr.includes(currentValue) ? currentValue : 'All';
+  select.dataset.selected = 'All';
+}
+
+function populateCategoryOptions() {
+  const cf = document.getElementById('countryFilter').value;
+  const rf = document.getElementById('regionFilter').value;
+  const tif = document.getElementById('cityFilter').value;
+  const categorySelect = document.getElementById('categoryFilter');
+
+  if (!categorySelect) return;
+
+  const previousValue = categorySelect.value;
+  const categories = new Set(
+    allData
+      .filter(i =>
+        (cf === 'All' || i.country === cf) &&
+        (rf === 'All' || i.region === rf) &&
+        (tif === 'All' || i.city === tif)
+      )
+      .flatMap(i => i.category.split(',').map(c => c.trim()).filter(Boolean))
+  );
+
+  const arr = [...categories].filter(Boolean).sort();
+  const options = ['All', ...arr];
+  categorySelect.innerHTML = options.map(v => `<option value="${v}">${v}</option>`).join('');
+  categorySelect.value = options.includes(previousValue) ? previousValue : 'All';
 }
 
 function setupEventListeners() {
   document.getElementById('searchBox').oninput = filterData;
-  document.getElementById('countryFilter').onchange = () => { populateRegion(); filterData(); };
-  document.getElementById('regionFilter').onchange = () => { populateCity(); filterData(); };
-  document.getElementById('cityFilter').onchange = filterData;
+  document.getElementById('countryFilter').onchange = () => { populateRegion(); populateCategoryOptions(); filterData(); };
+  document.getElementById('regionFilter').onchange = () => { populateCity(); populateCategoryOptions(); filterData(); };
+  document.getElementById('cityFilter').onchange = () => { populateCategoryOptions(); filterData(); };
   document.getElementById('categoryFilter').onchange = filterData;
+  document.getElementById('minRatingFilter').onchange = filterData;
   document.getElementById('sortBy').onchange = filterData;
   document.getElementById('clearFilters').onclick = () => {
     document.getElementById('searchBox').value = '';
-    ['countryFilter', 'regionFilter', 'cityFilter', 'categoryFilter']
+    ['countryFilter', 'regionFilter', 'cityFilter', 'categoryFilter', 'minRatingFilter']
       .forEach(id => document.getElementById(id).value = 'All');
     document.getElementById('sortBy').value = 'rating-desc';
+    populateCategoryOptions();
     filterData();
   };
 
@@ -292,6 +325,7 @@ function filterData() {
     rf = document.getElementById('regionFilter').value,
     tif = document.getElementById('cityFilter').value,
     catf = document.getElementById('categoryFilter').value,
+    minRating = Number(document.getElementById('minRatingFilter').value) || 0,
     sb = document.getElementById('sortBy').value;
 
   filteredData = allData.filter(i => {
@@ -306,7 +340,8 @@ function filterData() {
     const matchRegion = rf === 'All' || i.region === rf;
     const matchCity = tif === 'All' || i.city === tif;
     const matchCat = catf === 'All' || i.category.split(',').map(c => c.trim()).includes(catf);
-    return matchSearch && matchCountry && matchRegion && matchCity && matchCat;
+    const matchRating = i.rating >= minRating;
+    return matchSearch && matchCountry && matchRegion && matchCity && matchCat && matchRating;
   });
 
   filteredData.sort((a, b) => {
