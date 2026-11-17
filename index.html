@@ -58,22 +58,16 @@
                     </select>
                 </div>
 
-                <div class="filter-group">
-                    <label>⭐ Minimum Rating</label>
-                    <select id="minRatingFilter">
-                        <option value="0">All Ratings</option>
-                        <option value="1">1.0+ stars</option>
-                        <option value="2">2.0+ stars</option>
-                        <option value="3">3.0+ stars</option>
-                        <option value="4">4.0+ stars</option>
-                        <option value="5">5.0 stars</option>
-                    </select>
-                </div>
+                <!-- Retained as a neutral default for compatibility with script.js. -->
+                <select id="minRatingFilter" hidden aria-hidden="true">
+                    <option value="0" selected>All Ratings</option>
+                </select>
                 
                 <div class="filter-group">
                     <label>Sort By</label>
                     <select id="sortBy">
-                        <option value="rating-desc">⭐⭐⭐⭐⭐</option>
+                        <option value="rating-desc">⭐⭐⭐⭐⭐ (Highest Rated)</option>
+                        <option value="rating-asc">⭐ (Lowest Rated)</option>
                         <option value="price-asc">💰</option>
                         <option value="price-desc">💰💰💰</option>
                         <option value="reviews-desc">👥 Most Reviews</option>
